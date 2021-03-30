@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
+  <title>Simple RSS</title>
+</head>
+
+<body class="bg-moon-gray">
+  <div x-data="data()" x-init="initialize()">
+    <div class="fl w-25 pa2">
+      <div>
+        <input type="text" placeholder="Input Rss Feed here and press <Enter>" x-model="feedUrl"
+          x-on:keydown.enter="addRssFeed">
+      </div>
+      <template x-for="feed in feeds">
+        <div class="pa2" x-bind:class="{ 'bg-navy white': feed.title == selectedFeed }" x-text="feed.title"
+          @click="fetchFeed(feed)"></div>
+      </template>
+    </div>
+    <div class="fl w-75 pa2 vh-100">
+      <div x-show="status === 'LOADING'">Loading</div>
+      <div x-show="status === 'FETCHED'" class="h-100 overflow-auto">
+        <template x-for="item in items">
+          <div class="ml2 mr2 bg-white pa2 mb2 br2 shadow-1">
+            <a x-text="item.title" x-bind:href="item.link"></a>
+            <div class="mt2" x-text="item.description"></div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+  <script>
+    var proxy = "https://cors.bridged.cc/"
+
+    function convertRssToJson(rssXml) {
+      var parser = new DOMParser()
+      var xmlDoc = parser.parseFromString(rssXml, "text/xml")
+
+      var items = []
+
+      for (var item of xmlDoc.getElementsByTagName("item")) {
+        var descriptionElement = item.getElementsByTagName("description")
+        var text = ""
+        if (descriptionElement.length > 0) {
+          text = descriptionElement[0].textContent
+        } else {
+          text = item.getElementsByTagName("title")[0].textContent
+        }
+
+        items.push({
+          title: item.getElementsByTagName("title")[0].textContent.substr(0, 60) + '...',
+          description: text,
+          link: item.getElementsByTagName("link")[0].textContent,
+        })
+      }
+
+      return items
+    }
+
+    function data() {
+      return {
+        items: [],
+        feeds: Object.values(localStorage).map(JSON.parse),
+        selectedFeed: "",
+        feedUrl: "",
+        status: "",
+        initialize() {
+          if (this.feeds.length > 0) {
+            this.fetchFeed(this.feeds[0])
+          }
+        },
+        fetchFeed(feed) {
+          this.status = "LOADING"
+          this.selectedFeed = feed.title
+          fetch(`${proxy}${feed.url}`)
+            .then(res => res.text())
+            .then(convertRssToJson)
+            .then(json => this.items = json)
+            .finally(() => this.status = "FETCHED")
+        },
+        addRssFeed() {
+          fetch(`${proxy}${this.feedUrl}`)
+            .then(res => res.text())
+            .then(xml => {
+              var parser = new DOMParser()
+              var xmlDoc = parser.parseFromString(xml, "text/xml")
+
+              var title = xmlDoc.getElementsByTagName("title")[0].textContent
+
+              if (!localStorage.getItem(title)) {
+                localStorage.setItem(title, JSON.stringify({ title, url: this.feedUrl }))
+                this.feeds.push({ title, url: this.feedUrl })
+                this.feedUrl = ""
+              }
+            })
+        }
+      }
+    }
+  </script>
+
+</body>
+
+</html>

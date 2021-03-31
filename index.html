@@ -13,7 +13,7 @@
 
 <body class="bg-moon-gray">
   <div x-data="RssApp()" x-init="initialize()">
-    <div class="fl w-25-l w-100-ns w-100-m pa2">
+    <div class="fl w-100 w-25-l w-100-ns w-100-m pa2">
       <div>
         <input type="text" placeholder="Input Rss Feed here and press <Enter>" x-model="feedUrl"
           x-on:keydown.enter="addRssFeed" class="input-reset ba b--black-20 pa2 mb2 db w-100">
@@ -23,7 +23,7 @@
           @click="fetchFeed(feed)"></div>
       </template>
     </div>
-    <div class="fl w-75-l w-100-ns w-100-m pa2 vh-100">
+    <div class="fl w-100 w-75-l w-100-ns w-100-m pa2 vh-100">
       <div x-show="status === 'LOADING'">Loading</div>
       <div x-show="status === 'FETCHED'" class="h-100">
         <template x-for="item in items">

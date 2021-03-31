@@ -7,7 +7,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="/assets/js/alpine.min.js"></script>
   <link rel="stylesheet" href="/assets/css/tachyons.min.css" />
-  <script src="assets/js/sw.js"></script>
   <link rel="manifest" href="simple-rss.manifest">
   <title>Simple RSS</title>
 </head>
@@ -37,12 +36,17 @@
     </div>
   </div>
   <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+
     var proxy = "https://cors.bridged.cc/"
 
-    function convertRssToJson(rssXml) {
-      var parser = new DOMParser()
-      var xmlDoc = parser.parseFromString(rssXml, "text/xml")
+    function stripTitle(title) {
+      return title.length > 100 ? title.substr(0, 99) + '...' : title
+    }
 
+    function parseRss(xmlDoc) {
       var items = []
 
       for (var item of xmlDoc.getElementsByTagName("item")) {
@@ -55,13 +59,39 @@
         }
 
         items.push({
-          title: item.getElementsByTagName("title")[0].textContent.substr(0, 60) + '...',
+          title: stripTitle(item.getElementsByTagName("title")[0].textContent),
           description: text,
           link: item.getElementsByTagName("link")[0].textContent,
         })
       }
 
       return items
+    }
+
+    function parseAtom(xmlDoc) {
+      var entries = xmlDoc.getElementsByTagName("entry")
+      var items = []
+
+      for (var entry of entries) {
+        items.push({
+          title: stripTitle(entry.getElementsByTagName("title")[0].textContent),
+          description: entry.getElementsByTagName("content")[0].textContent,
+          link: entry.getElementsByTagName("link")[0].getAttribute("href"),
+        })
+      }
+
+      return items
+    }
+
+    function parseFeed(xml) {
+      var parser = new DOMParser()
+      var xmlDoc = parser.parseFromString(xml, "text/xml")
+
+      if (xmlDoc.getElementsByTagName("feed").length > 0) {
+        return parseAtom(xmlDoc)
+      } else {
+        return parseRss(xmlDoc)
+      }
     }
 
     function RssApp() {
@@ -81,7 +111,7 @@
           this.selectedFeed = feed.title
           fetch(`${proxy}${feed.url}`)
             .then(res => res.text())
-            .then(convertRssToJson)
+            .then(parseFeed)
             .then(json => this.items = json)
             .finally(() => this.status = "FETCHED")
         },

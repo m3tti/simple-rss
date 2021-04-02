@@ -42,7 +42,7 @@
         <template x-for="item in items">
           <div class="bg-near-black bb pa2 pb3 ma2">
             <a class="link dim white b" x-text="item.title" x-bind:href="item.link"></a>
-            <div class="mt2" x-html="item.description"></div>
+            <div class="mt2" x-text="item.description"></div>
           </div>
         </template>
       </div>
@@ -96,15 +96,59 @@
       return items
     }
 
+    function extractParagraphs(ps) {
+      var text = ""
+      for (p of ps) {
+        text += p.textContent.trim();
+      }
+      return text
+    }
+
+    function parseHTML(htmlDoc) {
+      var items = []
+
+      for (var item of htmlDoc.getElementsByClassName("regularitem")) {
+        items.push({
+          title: stripTitle(item.getElementsByTagName("a")[0].textContent),
+          description: extractParagraphs(item.getElementsByTagName("p")),
+          link: item.getElementsByTagName("a")[0].getAttribute("href"),
+        })
+      }
+
+      return items
+    }
+
     function parseFeed(xml) {
       var parser = new DOMParser()
-      var xmlDoc = parser.parseFromString(xml, "text/xml")
 
-      if (xmlDoc.getElementsByTagName("feed").length > 0) {
-        return parseAtom(xmlDoc)
+      if (xml.includes("<!DOCTYPE html")) {
+        return parseHTML(parser.parseFromString(xml, "text/html"))
       } else {
-        return parseRss(xmlDoc)
+        var xmlDoc = parser.parseFromString(xml, "text/xml")
+
+        if (xmlDoc.getElementsByTagName("feed").length > 0) {
+          return parseAtom(xmlDoc)
+        } else {
+          return parseRss(xmlDoc)
+        }
       }
+    }
+
+    function getTitle(xml) {
+      var parser = new DOMParser()
+
+      if (xml.includes("<!DOCTYPE html")) {
+        var htmlDoc = parser.parseFromString(xml, "text/html")
+        return htmlDoc.getElementsByTagName("h1")[0].textContent.trim()
+      } else {
+        var xmlDoc = parser.parseFromString(xml, "text/xml")
+        return xmlDoc.getElementsByTagName("title")[0].textContent.trim()
+      }
+    }
+
+    const STATUS = {
+      LOADING: "LOADING",
+      READY: "READY"
     }
 
     function RssApp() {
@@ -115,8 +159,23 @@
         feedUrl: "",
         status: "",
         isMenuOpen: false,
-        initialize() {
-          if (this.feeds.length > 0) {
+        async initialize() {
+          if (this.feeds.length <= 0) {
+            this.status = STATUS.LOADING
+            await this.addFeed("blog.fefe.de/rss.xml")
+            await this.addFeed("http://thenewstack.io/blog/feed/")
+            await this.addFeed("https://www.spektrum.de/alias/rss/spektrum-de-rss-feed/996406")
+            await this.addFeed("https://zenhabits.net/feed/")
+            await this.addFeed("https://nosidebar.com/feed")
+            await this.addFeed("https://rss.golem.de/rss.php?feed=RSS1.0")
+            await this.addFeed("https://www.theguardian.com/world/rss")
+            await this.addFeed("https://www.rt.com/rss/news/")
+            await this.addFeed("https://css-tricks.com/feed/")
+            await this.addFeed("https://hnrss.org/frontpage")
+            await this.addFeed("https://www.smashingmagazine.com/feed")
+
+            this.fetchFeed(this.feeds[0])
+          } else {
             this.fetchFeed(this.feeds[0])
           }
         },
@@ -129,11 +188,11 @@
           }
           return this.selectedFeed
         },
-        fetchFeed(feed) {
+        async fetchFeed(feed) {
           this.status = "LOADING"
           this.selectedFeed = feed.title
           this.isMenuOpen = false
-          fetch(`${proxy}${feed.url}`)
+          return fetch(`${proxy}${feed.url}`)
             .then(res => res.text())
             .then(parseFeed)
             .then(json => this.items = json)
@@ -144,17 +203,18 @@
           this.feeds = Object.values(localStorage).map(JSON.parse)
         },
         addRssFeed() {
-          fetch(`${proxy}${this.feedUrl}`)
+          this.addFeed(this.feedUrl)
+        },
+        async addFeed(feedUrl) {
+          return fetch(`${proxy}${feedUrl}`)
             .then(res => res.text())
             .then(xml => {
               var parser = new DOMParser()
-              var xmlDoc = parser.parseFromString(xml, "text/xml")
-
-              var title = xmlDoc.getElementsByTagName("title")[0].textContent
+              var title = getTitle(xml)
 
               if (!localStorage.getItem(title)) {
-                localStorage.setItem(title, JSON.stringify({ title, url: this.feedUrl }))
-                this.feeds.push({ title, url: this.feedUrl })
+                localStorage.setItem(title, JSON.stringify({ title, url: feedUrl }))
+                this.feeds.push({ title, url: feedUrl })
                 this.feedUrl = ""
               }
             })

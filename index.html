@@ -15,7 +15,7 @@
 <body class="bg-near-black white helvetica">
   <div x-data="RssApp()" x-init="initialize()">
     <div class="fixed top-0 left-0 b--white w-100 pa3 bg-orange">
-      <div class="fl f3" x-text="trimmedSelectedFeed()"></div>
+      <div class="fl f3 b" x-text="trimmedSelectedFeed()"></div>
       <div class="absolute right-0 top-0 pa3 f3 white" @click="toggleMenu()" x-show="!isMenuOpen">☰</div>
     </div>
 

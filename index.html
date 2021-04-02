@@ -29,8 +29,10 @@
             x-on:keydown.enter="addRssFeed" class="input-reset ba b--black-20 pa2 mb2 db w-100">
         </div>
         <template x-for="feed in feeds">
-          <div class="pa3" x-bind:class="{ 'bg-orange white': feed.title == selectedFeed }" x-text="feed.title"
-            @click="fetchFeed(feed)"></div>
+          <div class="relative pa3" x-bind:class="{ 'bg-orange white': feed.title == selectedFeed }">
+            <div x-text="feed.title" @click="fetchFeed(feed)"></div>
+            <div class="absolute top-0 right-0 pa3" @click="deleteFeed(feed)">✕</div>
+          </div>
         </template>
       </div>
     </div>
@@ -136,6 +138,10 @@
             .then(parseFeed)
             .then(json => this.items = json)
             .finally(() => this.status = "FETCHED")
+        },
+        deleteFeed(feed) {
+          localStorage.removeItem(feed.title)
+          this.feeds = Object.values(localStorage).map(JSON.parse)
         },
         addRssFeed() {
           fetch(`${proxy}${this.feedUrl}`)

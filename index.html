@@ -14,19 +14,19 @@
 
 <body class="bg-near-black white helvetica">
   <div x-data="RssApp()" x-init="initialize()">
-    <div class="fixed top-0 left-0 b--white w-100 pa3 bg-orange">
+    <div class="fixed top-0 left-0 b--white w-100 w-100-l w-100-ns pa3 bg-orange">
       <div class="fl f3 b" x-text="trimmedSelectedFeed()"></div>
       <div class="absolute right-0 top-0 pa3 f3 white" @click="toggleMenu()" x-show="!isMenuOpen">☰</div>
     </div>
 
-    <div class="absolute bg-near-black w-100 vh-100" x-show="isMenuOpen">
+    <div class="absolute bg-near-black w-100 w-100-l w-100-ns vh-100" x-show="isMenuOpen">
       <div class="pa3 fr f3" @click="toggleMenu()">
         ✕
       </div>
       <div class="">
         <div>
           <input type="text" placeholder="Input Rss Feed here and press <Enter>" x-model="feedUrl"
-            x-on:keydown.enter="addRssFeed" class="input-reset ba b--black-20 pa2 mb2 db w-100">
+            x-on:keydown.enter="addRssFeed" class="input-reset ba b--black-20 pa2 mb2 db w-100 w-100-l w-100-ns">
         </div>
         <template x-for="feed in feeds">
           <div class="relative pa3" x-bind:class="{ 'bg-orange white': feed.title == selectedFeed }">
@@ -36,7 +36,7 @@
         </template>
       </div>
     </div>
-    <div class="fl w-100 vh-100 mt5" x-show="!isMenuOpen">
+    <div class="fl w-100 w-100-l w-100-ns vh-100 mt5" x-show="!isMenuOpen">
       <div class="ma5" x-show="status === 'LOADING'">Loading</div>
       <div x-show="status === 'FETCHED'" class="h-100">
         <template x-for="item in items">

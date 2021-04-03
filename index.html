@@ -42,7 +42,7 @@
         <template x-for="item in items">
           <div class="bg-near-black bb pa2 pb3 ma2">
             <a class="link dim white b" x-text="item.title" x-bind:href="item.link"></a>
-            <div class="mt2" style="word-wrap: anywhere;" x-text="item.description"></div>
+            <div class="mt2" style="word-wrap: anywhere;" x-html="item.description"></div>
           </div>
         </template>
       </div>
